@@ -1,0 +1,92 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: "3.5"
+services:
+  pulsar:
+    image: "apachepulsar/pulsar:2.7.2"
+    command: bin/pulsar standalone
+    environment:
+      PULSAR_MEM: " -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g"
+    volumes:
+      - ./pulsar/data:/pulsar/data
+    ports:
+      - "6650:6650"
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - network_test_bed
+
+  pulsar-manager:
+    image: "apachepulsar/pulsar-manager:v0.2.0"
+    ports:
+      - "9527:9527"
+      - "7750:7750"
+    depends_on:
+      - pulsar
+    environment:
+      SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
+    networks:
+      - network_test_bed
+
+networks:
+  network_test_bed:
+    name: network_test_bed
+    driver: bridge
+
+
+#     set CSRF_TOKEN (curl http://localhost:7750/pulsar-manager/csrf-token)
+#     curl \
+#         -H "X-XSRF-TOKEN: $CSRF_TOKEN" \
+#         -H "Cookie: XSRF-TOKEN=$CSRF_TOKEN;" \
+#         -H 'Content-Type: application/json' \
+#         -X PUT http://localhost:7750/pulsar-manager/users/superuser \
+#         -d '{"name": "admin", "password": "password", "description": "test", "email": "username@test.org"}'
+
+
+
+# https://jpinjpblog.wordpress.com/2020/12/10/pulsar-with-manager-and-dashboard-on-docker-compose/
+
+
+# Add environment: http://pulsar:8080
+
+#  standalone:
+#    image: apachepulsar/pulsar
+#    expose:
+#      - 8080
+#      - 6650
+#    environment:
+#      - BOOKIE_MEM=" -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g"
+#    command: >
+#      /bin/bash -c
+#      "bin/apply-config-from-env.py conf/standalone.conf
+#      && bin/pulsar standalone --advertised-address 127.0.0.1"
+
+#  dashboard:
+#    image: apachepulsar/pulsar-dashboard
+#    depends_on:
+#      - standalone
+#    ports:
+#      - "80:80"
+#    environment:
+#      - SERVICE_URL=http://127.0.0.1:8080
+#
+#  host-machine:
+#    image: qoomon/docker-host@sha256:e0f021dd77c7c26d37b825ab2cbf73cd0a77ca993417da80a14192cb041937b0
+#    cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
+#    mem_limit: 8M
+#    restart: on-failure
+#    environment:
+#      PORTS: 8080
